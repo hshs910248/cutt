@@ -435,7 +435,7 @@ size_t TensorSplit::shmemAlloc(int sizeofType) const {
 
     case Packed:
     {
-      vol = (size_t)volMmk*sizeofType;
+      vol = (size_t)(volMmk + MAX_REG_STORAGE)*sizeofType;
     }
     break;
 
@@ -684,16 +684,16 @@ bool cuttPlan_t::createPlans(const int rank, const int* dim, const int* permutat
 
   size_t size0 = plans.size();
   /* if (!createTiledCopyPlans(rank, dim, permutation, sizeofType, deviceID, prop, plans)) return false;*/
-  if (!createTrivialPlans(rankRed, dimRed, permutationRed, sizeofType, deviceID, prop, plans)) return false;
+  //if (!createTrivialPlans(rankRed, dimRed, permutationRed, sizeofType, deviceID, prop, plans)) return false;
   // If Trivial plan was created, that's the only one we need
-  if (size0 != plans.size()) return true;
-  if (!createTiledCopyPlans(rankRed, dimRed, permutationRed, sizeofType, deviceID, prop, plans)) return false;
-  if (!createTiledPlans(rankRed, dimRed, permutationRed, sizeofType, deviceID, prop, plans)) return false;
+  //if (size0 != plans.size()) return true;
+  //if (!createTiledCopyPlans(rankRed, dimRed, permutationRed, sizeofType, deviceID, prop, plans)) return false;
+  //if (!createTiledPlans(rankRed, dimRed, permutationRed, sizeofType, deviceID, prop, plans)) return false;
   if (!createPackedPlans(rank, dim, permutation, sizeofType, deviceID, prop, plans)) return false;
-  if (!createPackedSplitPlans(rank, dim, permutation, sizeofType, deviceID, prop, plans)) return false;
-  if (rank != rankRed) {
-    if (!createPackedSplitPlans(rankRed, dimRed, permutationRed, sizeofType, deviceID, prop, plans)) return false;
-  }
+  //if (!createPackedSplitPlans(rank, dim, permutation, sizeofType, deviceID, prop, plans)) return false;
+  //if (rank != rankRed) {
+  //  if (!createPackedSplitPlans(rankRed, dimRed, permutationRed, sizeofType, deviceID, prop, plans)) return false;
+  //}
   return true;
 }
 

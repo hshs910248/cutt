@@ -228,7 +228,7 @@ __global__ void transposePacked(
     // Read from global memory
 #pragma unroll
     for (int j=0;j < numRegStorage;j++) {
-      int posMmk = threadIdx.x + j*blockDim.x;
+      int posMmk = threadIdx.x + j*blockDim.x + j;
       int posIn = posMbarIn + posMmkIn[j];
       if (posMmk < volMmk) shBuffer[posMmk] = dataIn[posIn];
     }
@@ -240,7 +240,7 @@ __global__ void transposePacked(
     for (int j=0;j < numRegStorage;j++) {
       int posMmk = threadIdx.x + j*blockDim.x;
       int posOut = posMbarOut + posMmkOut[j];
-      if (posMmk < volMmk) dataOut[posOut] = shBuffer[posSh[j]];
+      if (posMmk < volMmk) dataOut[posOut] = shBuffer[posSh[j] + posSh[j] / blockDim.x];
     }
 
 
