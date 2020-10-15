@@ -29,6 +29,21 @@ SOFTWARE.
 
 #define RESTRICT __restrict__
 
+#define CONST_MEM_SIZE 64
+__constant__ int const_Mbar_c_in[CONST_MEM_SIZE];
+__constant__ int const_Mbar_d_in[CONST_MEM_SIZE];
+__constant__ int const_Mbar_ct_in[CONST_MEM_SIZE];
+__constant__ int const_Mbar_c_out[CONST_MEM_SIZE];
+__constant__ int const_Mbar_d_out[CONST_MEM_SIZE];
+__constant__ int const_Mbar_ct_out[CONST_MEM_SIZE];
+
+__constant__ int const_Mmk_c_in[CONST_MEM_SIZE];
+__constant__ int const_Mmk_d_in[CONST_MEM_SIZE];
+__constant__ int const_Mmk_ct_in[CONST_MEM_SIZE];
+__constant__ int const_Mmk_c_out[CONST_MEM_SIZE];
+__constant__ int const_Mmk_d_out[CONST_MEM_SIZE];
+__constant__ int const_Mmk_ct_out[CONST_MEM_SIZE];
+
 //
 // Transpose when Mm and Mk don't overlap and contain only single rank
 //
@@ -141,7 +156,13 @@ __global__ void transposePacked(
   Mmk.c_out = 1;
   Mmk.d_out = 1;
   if (warpLane < sizeMmk) {
-    Mmk = gl_Mmk[warpLane];
+    //Mmk = gl_Mmk[warpLane];
+	Mmk.c_in = const_Mmk_c_in[warpLane];
+	Mmk.d_in = const_Mmk_d_in[warpLane];
+	Mmk.ct_in = const_Mmk_ct_in[warpLane];
+	Mmk.c_out = const_Mmk_c_out[warpLane];
+	Mmk.d_out = const_Mmk_d_out[warpLane];
+	Mmk.ct_out = const_Mmk_ct_out[warpLane];
   }
   TensorConv Msh;
   Msh.c = 1;
@@ -178,7 +199,13 @@ __global__ void transposePacked(
   Mbar.c_out = 1;
   Mbar.d_out = 1;
   if (warpLane < sizeMbar) {
-    Mbar = gl_Mbar[warpLane];
+    //Mbar = gl_Mbar[warpLane];
+	Mbar.c_in = const_Mbar_c_in[warpLane];
+	Mbar.d_in = const_Mbar_d_in[warpLane];
+	Mbar.ct_in = const_Mbar_ct_in[warpLane];
+	Mbar.c_out = const_Mbar_c_out[warpLane];
+	Mbar.d_out = const_Mbar_d_out[warpLane];
+	Mbar.ct_out = const_Mbar_ct_out[warpLane];
   }
 
   for (int posMbar=blockIdx.x;posMbar < volMbar;posMbar += gridDim.x)
@@ -837,6 +864,53 @@ int cuttKernelLaunchConfiguration(const int sizeofType, const TensorSplit& ts,
   return numActiveBlockReturn;
 }
 
+void initConstVec(cuttPlan_t& plan, TensorSplit& ts) {
+	std::vector<int> Mbar_c_in;
+	std::vector<int> Mbar_d_in;
+	std::vector<int> Mbar_ct_in;
+	std::vector<int> Mbar_c_out;
+	std::vector<int> Mbar_d_out;
+	std::vector<int> Mbar_ct_out;
+	for (size_t i = 0; i < ts.sizeMbar; i++) {
+		Mbar_c_in.push_back(plan.hostMbar[i].c_in);
+		Mbar_d_in.push_back(plan.hostMbar[i].d_in);
+		Mbar_ct_in.push_back(plan.hostMbar[i].ct_in);
+		Mbar_c_out.push_back(plan.hostMbar[i].c_out);
+		Mbar_d_out.push_back(plan.hostMbar[i].d_out);
+		Mbar_ct_out.push_back(plan.hostMbar[i].ct_out);
+	}
+	size_t MbarByteSize = sizeof(int) * ts.sizeMbar;
+	cudaMemcpyToSymbol(const_Mbar_c_in, Mbar_c_in.data(), MbarByteSize, 0, cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(const_Mbar_d_in, Mbar_d_in.data(), MbarByteSize, 0, cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(const_Mbar_ct_in, Mbar_ct_in.data(), MbarByteSize, 0, cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(const_Mbar_c_out, Mbar_c_out.data(), MbarByteSize, 0, cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(const_Mbar_d_out, Mbar_d_out.data(), MbarByteSize, 0, cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(const_Mbar_ct_out, Mbar_ct_out.data(), MbarByteSize, 0, cudaMemcpyHostToDevice);
+	
+	std::vector<int> Mmk_c_in;
+	std::vector<int> Mmk_d_in;
+	std::vector<int> Mmk_ct_in;
+	std::vector<int> Mmk_c_out;
+	std::vector<int> Mmk_d_out;
+	std::vector<int> Mmk_ct_out;
+	for (size_t i = 0; i < ts.sizeMmk; i++) {
+		Mmk_c_in.push_back(plan.hostMmk[i].c_in);
+		Mmk_d_in.push_back(plan.hostMmk[i].d_in);
+		Mmk_ct_in.push_back(plan.hostMmk[i].ct_in);
+		Mmk_c_out.push_back(plan.hostMmk[i].c_out);
+		Mmk_d_out.push_back(plan.hostMmk[i].d_out);
+		Mmk_ct_out.push_back(plan.hostMmk[i].ct_out);
+	}
+	
+	size_t MmkByteSize = sizeof(int) * ts.sizeMmk;
+	cudaMemcpyToSymbol(const_Mmk_c_in, Mmk_c_in.data(), MmkByteSize, 0, cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(const_Mmk_d_in, Mmk_d_in.data(), MmkByteSize, 0, cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(const_Mmk_ct_in, Mmk_ct_in.data(), MmkByteSize, 0, cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(const_Mmk_c_out, Mmk_c_out.data(), MmkByteSize, 0, cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(const_Mmk_d_out, Mmk_d_out.data(), MmkByteSize, 0, cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(const_Mmk_ct_out, Mmk_ct_out.data(), MmkByteSize, 0, cudaMemcpyHostToDevice);
+}
+
 bool cuttKernel(cuttPlan_t& plan, void* dataIn, void* dataOut) {
 
   LaunchConfig& lc = plan.launchConfig;
@@ -852,6 +926,7 @@ bool cuttKernel(cuttPlan_t& plan, void* dataIn, void* dataOut) {
 
     case Packed:
     {
+		initConstVec(plan, ts);
       switch(lc.numRegStorage) {
 #define CALL0(TYPE, NREG) \
     transposePacked<TYPE, NREG> <<< lc.numblock, lc.numthread, lc.shmemsize, plan.stream >>> \
